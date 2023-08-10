@@ -6,6 +6,10 @@ import {OrbitControls} from "three/addons/controls/OrbitControls.js"
 
 const ORIGINAL_VIDEO_WIDTH=1920;
 const ORIGINAL_VIDEO_HEIGHT=1080;
+const CUBE_COUNT_X=ORIGINAL_VIDEO_WIDTH/12;
+const CUBE_COUNT_Y=ORIGINAL_VIDEO_HEIGHT/12;
+const CUBE_LENGTH=0.25;
+
 const VIDEO_CAT_URL="./videos/coverr-cat-in-the-grass-9011-1080p.mp4";
 
 const appElement=document.querySelector<HTMLDivElement>('#app')!;
@@ -52,37 +56,35 @@ const renderer = new THREE.WebGLRenderer({
   canvas:renderCanvasElement,
 });
 
-camera.position.y = 2;
-camera.position.z = 15;
+camera.position.y = CUBE_COUNT_Y*CUBE_LENGTH*0.5;
+camera.position.z = 20;
 
 const orbitControls=new OrbitControls(camera,renderer.domElement);
-orbitControls.target.set( 0, 2, 0 );
+orbitControls.target.set( 0, CUBE_COUNT_Y*CUBE_LENGTH*0.5, 0 );
 // orbitControls.autoRotate=true;
 orbitControls.update();
 
 
 {
-  const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+  const geometry = new THREE.BoxGeometry( CUBE_LENGTH, CUBE_LENGTH, CUBE_LENGTH );
   const attributeUv=geometry.getAttribute("uv");
   for(let i=0;i<attributeUv.count;i+=1){
-    const x=attributeUv.getX(i);
-    const y=attributeUv.getY(i);
-    attributeUv.setXY(i,x*0.5,y*0.5);
+    const x=attributeUv.getX(i)/CUBE_COUNT_X;
+    const y=attributeUv.getY(i)/CUBE_COUNT_Y;
+    attributeUv.setXY(i,x,y);
   }
-  const qty=10*10*10;
+  const qty=CUBE_COUNT_X*CUBE_COUNT_Y;
   const arrayOffsetUv=new Float32Array(2*qty);
-  for(let i=0;i<arrayOffsetUv.length;i+=2){
-    arrayOffsetUv[i+0]=Math.floor(Math.random()*2)*0.5;
-    arrayOffsetUv[i+1]=Math.floor(Math.random()*2)*0.5;
+  for(let iy=0;iy<CUBE_COUNT_Y;iy+=1){
+    for(let ix=0;ix<CUBE_COUNT_X;ix+=1){
+      const i=(iy*CUBE_COUNT_X+ix)*2;
+      arrayOffsetUv[i+0]=ix/CUBE_COUNT_X;
+      arrayOffsetUv[i+1]=iy/CUBE_COUNT_Y;
+    }
   }
+
   const attributeOffsetUv=new THREE.InstancedBufferAttribute(arrayOffsetUv,2);
   geometry.setAttribute("offsetUv",attributeOffsetUv);
-  // const videoElement:HTMLVideoElement=document.createElement("video");
-  // videoElement.playsInline=true;
-  // videoElement.autoplay=true;
-  // videoElement.muted=true;
-  // videoElement.loop=true;
-  // videoElement.src=VIDEO_CAT_URL;
   const videoElement=document.querySelector<HTMLVideoElement>("#videoCat")!;
   const material = new THREE.MeshStandardMaterial({
     map:new THREE.VideoTexture(videoElement),
@@ -109,13 +111,13 @@ orbitControls.update();
   };
 
   const cube = new THREE.InstancedMesh( geometry, material,qty);
-  for(let ix=0;ix<10;ix+=1){
-    for(let iy=0;iy<10;iy+=1){
-      for(let iz=0;iz<10;iz+=1){
-        const matrix=new THREE.Matrix4();
-        matrix.makeTranslation(ix*2-10,iy*2,iz*2-10);
-        cube.setMatrixAt(ix*10*10+iy*10+iz,matrix);
-      }
+  for(let iy=0;iy<CUBE_COUNT_Y;iy+=1){
+    for(let ix=0;ix<CUBE_COUNT_X;ix+=1){
+      const matrix=new THREE.Matrix4();
+
+      matrix.makeTranslation((ix-CUBE_COUNT_X*0.5)*CUBE_LENGTH,(iy+0.5)*CUBE_LENGTH,0*CUBE_LENGTH);
+      const i=iy*CUBE_COUNT_X+ix;
+      cube.setMatrixAt(i,matrix);
     }
 
   }
