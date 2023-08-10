@@ -65,6 +65,7 @@ orbitControls.target.set( 0, CUBE_COUNT_Y*CUBE_LENGTH*0.5, 0 );
 orbitControls.update();
 
 
+let cube:THREE.InstancedMesh;
 {
   const geometry = new THREE.BoxGeometry( CUBE_LENGTH, CUBE_LENGTH, CUBE_LENGTH );
   const attributeUv=geometry.getAttribute("uv");
@@ -110,17 +111,7 @@ orbitControls.update();
 
   };
 
-  const cube = new THREE.InstancedMesh( geometry, material,qty);
-  for(let iy=0;iy<CUBE_COUNT_Y;iy+=1){
-    for(let ix=0;ix<CUBE_COUNT_X;ix+=1){
-      const matrix=new THREE.Matrix4();
-
-      matrix.makeTranslation((ix-CUBE_COUNT_X*0.5)*CUBE_LENGTH,(iy+0.5)*CUBE_LENGTH,0*CUBE_LENGTH);
-      const i=iy*CUBE_COUNT_X+ix;
-      cube.setMatrixAt(i,matrix);
-    }
-
-  }
+  cube = new THREE.InstancedMesh( geometry, material,qty);
   scene.add( cube );
   cube.position.y=1;
 }
@@ -140,6 +131,25 @@ onResize();
 function animate() {
 	requestAnimationFrame( animate );
 
+  const time=performance.now()*0.001;
+
+  for(let iy=0;iy<CUBE_COUNT_Y;iy+=1){
+    for(let ix=0;ix<CUBE_COUNT_X;ix+=1){
+      const radianForRotationX=time*90*THREE.MathUtils.DEG2RAD;
+      const matrixForRotationX=new THREE.Matrix4().makeRotationX(radianForRotationX);
+      const radianForRotationY=time*120*THREE.MathUtils.DEG2RAD;
+      const matrixForRotationY=new THREE.Matrix4().makeRotationY(radianForRotationY);
+      const radianForTranslate=time*45*THREE.MathUtils.DEG2RAD;
+      const x=(ix-CUBE_COUNT_X*0.5)*(1+Math.sin(radianForTranslate)+1)*CUBE_LENGTH;
+      const y=(iy+0.5)*(1+Math.sin(radianForTranslate)+1)*CUBE_LENGTH;
+      const z=0*CUBE_LENGTH;
+      const matrixForTranslation=new THREE.Matrix4().makeTranslation(x,y,z);
+      const i=iy*CUBE_COUNT_X+ix;
+      const matrix=matrixForTranslation.clone().multiply(matrixForRotationY).multiply(matrixForRotationX);
+      cube.setMatrixAt(i,matrix);
+      cube.instanceMatrix.needsUpdate=true;
+    }
+  }
 	// cube.rotation.x += 0.01;
 	// cube.rotation.y += 0.01;
   // orbitControls.update();
